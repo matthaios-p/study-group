@@ -1,10 +1,11 @@
 import express, { Router, Request, Response } from 'express';
+import { JoinRequestRecord, CoordinatorNotification } from '../types/joinRequest';
 
 /**
  * Study Groups Routes
  * 
  * This module defines all API endpoints for managing study groups.
- * Routes handle group search, filtering, and creation functionality.
+ * Routes handle group search, filtering, creation, and join functionality.
  */
 
 const router: Router = express.Router();
@@ -26,6 +27,7 @@ let mockGroups = [
     createdBy: 'user_001',
     coordinatorRole: 'Συντονιστής',
     createdAt: '2026-04-15',
+    members: ['user_001', 'user_002', 'user_003', 'user_004', 'user_005'],
   },
   {
     id: '2',
@@ -39,6 +41,7 @@ let mockGroups = [
     createdBy: 'user_002',
     coordinatorRole: 'Συντονιστής',
     createdAt: '2026-04-20',
+    members: ['user_002', 'user_006', 'user_007'],
   },
   {
     id: '3',
@@ -52,6 +55,7 @@ let mockGroups = [
     createdBy: 'user_003',
     coordinatorRole: 'Συντονιστής',
     createdAt: '2026-04-10',
+    members: ['user_003'],
   },
   {
     id: '4',
@@ -65,6 +69,7 @@ let mockGroups = [
     createdBy: 'user_004',
     coordinatorRole: 'Συντονιστής',
     createdAt: '2026-05-01',
+    members: ['user_004'],
   },
   {
     id: '5',
@@ -78,6 +83,7 @@ let mockGroups = [
     createdBy: 'user_005',
     coordinatorRole: 'Συντονιστής',
     createdAt: '2026-03-25',
+    members: ['user_005'],
   },
   {
     id: '6',
@@ -91,8 +97,21 @@ let mockGroups = [
     createdBy: 'user_006',
     coordinatorRole: 'Συντονιστής',
     createdAt: '2026-05-05',
+    members: ['user_006'],
   },
 ];
+
+/**
+ * Mock join requests database
+ * Stores pending join requests awaiting coordinator approval
+ */
+let mockJoinRequests: JoinRequestRecord[] = [];
+
+/**
+ * Mock notifications database
+ * Stores notifications to coordinators about join requests
+ */
+let mockNotifications: CoordinatorNotification[] = [];
 
 /**
  * GET /api/groups
@@ -105,8 +124,6 @@ let mockGroups = [
  */
 router.get('/', (req: Request, res: Response): void => {
   try {
-    // In production: Query database for all groups
-    // const groups = await Group.find();
     res.status(200).json(mockGroups);
   } catch (error) {
     console.error('Error fetching groups:', error);
@@ -125,14 +142,9 @@ router.get('/', (req: Request, res: Response): void => {
  */
 router.get('/subjects', (req: Request, res: Response): void => {
   try {
-    // Extract unique subjects from groups
     const uniqueSubjects = Array.from(
       new Set(mockGroups.map((group) => group.subject))
     );
-
-    // In production: Query database for unique subjects
-    // const subjects = await Group.distinct('subject');
-
     res.status(200).json(uniqueSubjects.sort());
   } catch (error) {
     console.error('Error fetching subjects:', error);
@@ -147,11 +159,11 @@ router.get('/subjects', (req: Request, res: Response): void => {
  * 
  * Request Body:
  * {
- *   subject: string (optional) - Filter by subject
- *   minMembers: number (optional) - Minimum number of members
- *   maxMembers: number (optional) - Maximum number of members
- *   startDate: string (optional) - Start date (YYYY-MM-DD format)
- *   endDate: string (optional) - End date (YYYY-MM-DD format)
+ *   subject: string (optional)
+ *   minMembers: number (optional)
+ *   maxMembers: number (optional)
+ *   startDate: string (optional)
+ *   endDate: string (optional)
  * }
  * 
  * Response:
@@ -163,7 +175,6 @@ router.post('/search', (req: Request, res: Response): void => {
   try {
     const { subject, minMembers, maxMembers, startDate, endDate } = req.body;
 
-    // Validate request parameters
     if (minMembers !== undefined && minMembers < 0) {
       res.status(400).json({ error: 'minMembers cannot be negative' });
       return;
@@ -179,17 +190,14 @@ router.post('/search', (req: Request, res: Response): void => {
       return;
     }
 
-    // Apply filters
     let filteredGroups = mockGroups;
 
-    // Filter by subject (case-insensitive)
     if (subject && subject.trim() !== '') {
       filteredGroups = filteredGroups.filter(
         (group) => group.subject.toLowerCase() === subject.toLowerCase()
       );
     }
 
-    // Filter by number of members
     if (minMembers !== undefined && minMembers >= 0) {
       filteredGroups = filteredGroups.filter(
         (group) => group.numberOfMembers >= minMembers
@@ -202,21 +210,17 @@ router.post('/search', (req: Request, res: Response): void => {
       );
     }
 
-    // Filter by date range
     if (startDate || endDate) {
       filteredGroups = filteredGroups.filter((group) => {
         const groupDate = new Date(group.createdAt);
 
-        // Check start date
         if (startDate) {
           const start = new Date(startDate);
           if (groupDate < start) return false;
         }
 
-        // Check end date
         if (endDate) {
           const end = new Date(endDate);
-          // Set end date to end of day (23:59:59)
           end.setHours(23, 59, 59, 999);
           if (groupDate > end) return false;
         }
@@ -225,7 +229,6 @@ router.post('/search', (req: Request, res: Response): void => {
       });
     }
 
-    // Sort results by creation date (newest first)
     filteredGroups.sort((a, b) => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
@@ -247,7 +250,7 @@ router.post('/search', (req: Request, res: Response): void => {
  *   title: string (required) - Group title (3-100 characters)
  *   description: string (required) - Group description (10-500 characters)
  *   subject: string (required) - Subject area
- *   visibility: 'Public' | 'Private' (required) - Group visibility
+ *   visibility: 'Public' | 'Private' (required)
  *   userId: string (required) - ID of the user creating the group
  * }
  * 
@@ -260,10 +263,8 @@ router.post('/create', (req: Request, res: Response): void => {
   try {
     const { title, description, subject, visibility, userId } = req.body;
 
-    // ========== Validation ==========
     const validationErrors: Record<string, string> = {};
 
-    // Validate title
     if (!title || typeof title !== 'string') {
       validationErrors.title = 'Title is required';
     } else if (title.trim().length < 3) {
@@ -272,7 +273,6 @@ router.post('/create', (req: Request, res: Response): void => {
       validationErrors.title = 'Title must not exceed 100 characters';
     }
 
-    // Validate description
     if (!description || typeof description !== 'string') {
       validationErrors.description = 'Description is required';
     } else if (description.trim().length < 10) {
@@ -281,22 +281,18 @@ router.post('/create', (req: Request, res: Response): void => {
       validationErrors.description = 'Description must not exceed 500 characters';
     }
 
-    // Validate subject
     if (!subject || typeof subject !== 'string' || subject.trim() === '') {
       validationErrors.subject = 'Subject is required';
     }
 
-    // Validate visibility
     if (!visibility || !['Public', 'Private'].includes(visibility)) {
       validationErrors.visibility = 'Visibility must be either Public or Private';
     }
 
-    // Validate userId
     if (!userId || typeof userId !== 'string') {
       validationErrors.userId = 'User ID is required';
     }
 
-    // Return validation errors if any
     if (Object.keys(validationErrors).length > 0) {
       res.status(400).json({
         error: 'Validation failed',
@@ -305,33 +301,25 @@ router.post('/create', (req: Request, res: Response): void => {
       return;
     }
 
-    // ========== Create Group ==========
     const newGroup = {
       id: (mockGroups.length + 1).toString(),
       title: title.trim(),
       description: description.trim(),
       subject: subject.trim(),
       visibility: visibility,
-      numberOfMembers: 1, // Creator is the first member
-      maxMembers: 20, // Default max members
+      numberOfMembers: 1,
+      maxMembers: 20,
       status: 'Open',
       createdBy: userId,
-      coordinatorRole: 'Συντονιστής', // Greek for "Coordinator"
-      createdAt: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+      coordinatorRole: 'Συντονιστής',
+      createdAt: new Date().toISOString().split('T')[0],
+      members: [userId],
     };
 
-    // Add to mock database
     mockGroups.push(newGroup);
-
-    // In production:
-    // const newGroup = await Group.create({ ... });
-    // or
-    // const group = new Group({ ... });
-    // await group.save();
 
     console.log(`✅ Group created: ${newGroup.title} by user ${userId}`);
 
-    // ========== Response ==========
     res.status(201).json({
       message: 'Group created successfully',
       group: newGroup,
@@ -340,6 +328,134 @@ router.post('/create', (req: Request, res: Response): void => {
   } catch (error) {
     console.error('Error creating group:', error);
     res.status(500).json({ error: 'Failed to create group' });
+  }
+});
+
+/**
+ * POST /api/groups/:groupId/join
+ * 
+ * Join a study group with approval workflow
+ * 
+ * Features:
+ * - For "Open" groups: Automatically add user as member
+ * - For "Requires Approval" groups: Create pending request
+ * - Simulate coordinator notification
+ * 
+ * Request Body:
+ * {
+ *   userId: string (required) - ID of user requesting to join
+ * }
+ * 
+ * Response:
+ * - 200: Join successful
+ *   For Open groups: { message: "...", status: "approved" }
+ *   For Approval groups: { message: "...", status: "pending", requestId: "...", coordinatorNotification: "..." }
+ * - 400: Invalid request or user already member
+ * - 404: Group not found
+ * - 500: Server error
+ */
+router.post('/:groupId/join', (req: Request, res: Response): void => {
+  try {
+    const { groupId } = req.params;
+    const { userId } = req.body;
+
+    // ========== Validation ==========
+    if (!userId || typeof userId !== 'string') {
+      res.status(400).json({ error: 'User ID is required' });
+      return;
+    }
+
+    if (!groupId || typeof groupId !== 'string') {
+      res.status(400).json({ error: 'Group ID is required' });
+      return;
+    }
+
+    // ========== Find Group ==========
+    const group = mockGroups.find((g) => g.id === groupId);
+
+    if (!group) {
+      res.status(404).json({ error: 'Group not found' });
+      return;
+    }
+
+    // ========== Check if user already a member ==========
+    if (group.members && group.members.includes(userId)) {
+      res.status(400).json({ error: 'You are already a member of this group' });
+      return;
+    }
+
+    // ========== Check if group is full ==========
+    if (group.numberOfMembers >= group.maxMembers) {
+      res.status(400).json({ error: 'This group is full. Cannot join.' });
+      return;
+    }
+
+    // ========== Handle "Open" Status Groups ==========
+    if (group.status === 'Open') {
+      // Automatically add user as member
+      if (!group.members) {
+        group.members = [];
+      }
+      group.members.push(userId);
+      group.numberOfMembers += 1;
+
+      console.log(`✅ User ${userId} automatically joined group "${group.title}"`);
+
+      res.status(200).json({
+        message: 'You have been successfully added to the group!',
+        status: 'approved',
+      });
+      return;
+    }
+
+    // ========== Handle "Requires Approval" Status Groups ==========
+    if (group.status === 'Requires Approval') {
+      // Create pending request
+      const joinRequestId = `req_${Date.now()}_${userId}`;
+      const joinRequest: JoinRequestRecord = {
+        id: joinRequestId,
+        groupId: groupId,
+        userId: userId,
+        status: 'pending',
+        requestedAt: new Date().toISOString(),
+        coordinatorId: group.createdBy,
+      };
+
+      mockJoinRequests.push(joinRequest);
+
+      // Create coordinator notification
+      const notification: CoordinatorNotification = {
+        id: `notif_${Date.now()}`,
+        coordinatorId: group.createdBy,
+        groupId: groupId,
+        userId: userId,
+        type: 'join_request',
+        message: `User ${userId} has requested to join your group "${group.title}"`,
+        createdAt: new Date().toISOString(),
+        read: false,
+      };
+
+      mockNotifications.push(notification);
+
+      console.log(
+        `⏳ Join request pending for user ${userId} to join group "${group.title}"`
+      );
+      console.log(`📧 Coordinator ${group.createdBy} has been notified`);
+
+      res.status(200).json({
+        message: 'Your join request has been submitted and is pending approval.',
+        status: 'pending',
+        requestId: joinRequestId,
+        coordinatorNotification: `Coordinator (${group.coordinatorRole}) notification created: "User ${userId} has requested to join your group"`,
+      });
+      return;
+    }
+
+    // ========== Unexpected Status ==========
+    res.status(400).json({ error: 'Cannot join group with current status' });
+  } catch (error) {
+    console.error('Error joining group:', error);
+    res.status(500).json({ error: 'Failed to process join request' });
   }
 });
 
@@ -360,7 +476,6 @@ router.get('/:id', (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
 
-    // Find group by ID
     const group = mockGroups.find((g) => g.id === id);
 
     if (!group) {
@@ -368,13 +483,58 @@ router.get('/:id', (req: Request, res: Response): void => {
       return;
     }
 
-    // In production: Query database
-    // const group = await Group.findById(id);
-
     res.status(200).json(group);
   } catch (error) {
     console.error('Error fetching group:', error);
     res.status(500).json({ error: 'Failed to fetch group' });
+  }
+});
+
+/**
+ * GET /api/groups/:groupId/join-requests
+ * 
+ * Fetch all pending join requests for a group (for Coordinator)
+ * 
+ * Response:
+ * - 200: Array of pending join requests
+ * - 500: Server error
+ */
+router.get('/:groupId/join-requests', (req: Request, res: Response): void => {
+  try {
+    const { groupId } = req.params;
+
+    const requests = mockJoinRequests.filter(
+      (req) => req.groupId === groupId && req.status === 'pending'
+    );
+
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error('Error fetching join requests:', error);
+    res.status(500).json({ error: 'Failed to fetch join requests' });
+  }
+});
+
+/**
+ * GET /api/notifications/:coordinatorId
+ * 
+ * Fetch all notifications for a coordinator
+ * 
+ * Response:
+ * - 200: Array of notifications
+ * - 500: Server error
+ */
+router.get('/notifications/:coordinatorId', (req: Request, res: Response): void => {
+  try {
+    const { coordinatorId } = req.params;
+
+    const notifications = mockNotifications.filter(
+      (notif) => notif.coordinatorId === coordinatorId
+    );
+
+    res.status(200).json(notifications);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 });
 

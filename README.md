@@ -21,18 +21,23 @@
 ### Implemented
 - ✅ **Search Groups** - Find study groups by subject, member count, and date
 - ✅ **Create Groups** - Create new study groups with automatic Coordinator role assignment
+- ✅ **Join Groups** - Request to join groups with smart approval workflow
+  - Auto-approve for "Open" groups
+  - Pending approval for "Requires Approval" groups
+  - Coordinator notifications
 - ✅ **Filter & Sort** - Advanced filtering with subject, members, and date range
 - ✅ **Responsive Design** - Mobile-friendly interface
 - ✅ **Form Validation** - Real-time validation with error messages
 - ✅ **State Management** - Loading and error states
 
 ### Planned
-- 🔜 Join Groups
+- 🔜 Approve/Reject Join Requests
 - 🔜 Group Management (edit, delete)
 - 🔜 Member Management
 - 🔜 Messaging & Discussions
 - 🔜 User Profiles
 - 🔜 Notifications
+- 🔜 Leave Group
 
 ---
 
@@ -65,16 +70,22 @@ study-group/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── SearchGroups.tsx
-│   │   │   ├── SearchGroups.css
+│   │   │   ├── SearchGroupsWithJoin.tsx
+│   │   │   ├── SearchGroupsWithJoin.css
+│   │   │   ├── GroupCard.tsx
+│   │   │   ├── GroupCard.css
 │   │   │   ├── CreateGroup.tsx
-│   │   │   └── CreateGroup.css
+│   │   │   ├── CreateGroup.css
+│   │   │   ├── SearchGroups.tsx
+│   │   │   └── SearchGroups.css
 │   │   ├── App.tsx
 │   │   └── index.tsx
 │   ├── package.json
 │   └── tsconfig.json
 ├── backend/
 │   ├── src/
+│   │   ├── types/
+│   │   │   └── joinRequest.ts
 │   │   ├── routes/
 │   │   │   └── groupRoutes.ts
 │   │   ├── server.ts
@@ -83,6 +94,7 @@ study-group/
 │   └── tsconfig.json
 ├── docs/
 │   ├── CREATE_GROUP_FEATURE.md
+│   ├── JOIN_GROUP_FEATURE.md
 │   └── SEARCH_GROUPS_FEATURE.md
 └── README.md
 ```
@@ -192,7 +204,8 @@ http://localhost:5000/api/groups
     "status": "Open",
     "visibility": "Public",
     "coordinatorRole": "Συντονιστής",
-    "createdAt": "2026-04-15"
+    "createdAt": "2026-04-15",
+    "members": ["user_001", "user_002", ...]
   }
 ]
 ```
@@ -246,13 +259,6 @@ http://localhost:5000/api/groups
 ]
 ```
 
-**Error (400):**
-```json
-{
-  "error": "minMembers cannot be greater than maxMembers"
-}
-```
-
 ### 4. Create Group
 
 **Endpoint:** `POST /api/groups/create`
@@ -298,18 +304,48 @@ http://localhost:5000/api/groups
 }
 ```
 
-**Error (400):**
+### 5. Join Group
+
+**Endpoint:** `POST /api/groups/:groupId/join`
+
+**Description:** Request to join a study group with smart approval workflow
+
+**Path Parameters:**
+- `groupId` (string) - The ID of the group to join
+
+**Request Body:**
 ```json
 {
-  "error": "Validation failed",
-  "details": {
-    "title": "Title must be at least 3 characters",
-    "subject": "Subject is required"
-  }
+  "userId": "user_123"
 }
 ```
 
-### 5. Get Specific Group
+**Response for Open Groups (200):**
+```json
+{
+  "message": "You have been successfully added to the group!",
+  "status": "approved"
+}
+```
+
+**Response for Approval Groups (200):**
+```json
+{
+  "message": "Your join request has been submitted and is pending approval.",
+  "status": "pending",
+  "requestId": "req_1715779968000_user_123",
+  "coordinatorNotification": "Coordinator (Συντονιστής) notification created: ..."
+}
+```
+
+**Error (400):**
+```json
+{
+  "error": "You are already a member of this group"
+}
+```
+
+### 6. Get Specific Group
 
 **Endpoint:** `GET /api/groups/:id`
 
@@ -329,36 +365,105 @@ http://localhost:5000/api/groups
 }
 ```
 
-**Error (404):**
+### 7. Get Join Requests (Future)
+
+**Endpoint:** `GET /api/groups/:groupId/join-requests`
+
+**Description:** Fetch all pending join requests for a group
+
+**Response (200):**
 ```json
-{
-  "error": "Group not found"
-}
+[
+  {
+    "id": "req_1715779968000_user_123",
+    "groupId": "2",
+    "userId": "user_123",
+    "status": "pending",
+    "requestedAt": "2026-05-15T10:30:00Z",
+    "coordinatorId": "user_002"
+  }
+]
+```
+
+### 8. Get Notifications (Future)
+
+**Endpoint:** `GET /api/notifications/:coordinatorId`
+
+**Description:** Fetch all notifications for a coordinator
+
+**Response (200):**
+```json
+[
+  {
+    "id": "notif_1715779968000",
+    "coordinatorId": "user_002",
+    "groupId": "2",
+    "userId": "user_123",
+    "type": "join_request",
+    "message": "User user_123 has requested to join your group 'Physics Study Circle'",
+    "createdAt": "2026-05-15T10:30:00Z",
+    "read": false
+  }
+]
 ```
 
 ---
 
 ## 🎨 Components
 
-### SearchGroups Component
+### SearchGroupsWithJoin Component
 
-**File:** `frontend/src/components/SearchGroups.tsx`
+**File:** `frontend/src/components/SearchGroupsWithJoin.tsx`
 
 **Features:**
 - Display all study groups in a grid
 - Filter by subject, members count, date range
 - Real-time search results
-- Group cards with key information
+- Group cards with join functionality
 - Loading and error states
 - Responsive design
+- Success notifications
 
 **Usage:**
 ```tsx
-import SearchGroups from './components/SearchGroups';
+import SearchGroupsWithJoin from './components/SearchGroupsWithJoin';
 
 function App() {
-  return <SearchGroups />;
+  return <SearchGroupsWithJoin />;
 }
+```
+
+### GroupCard Component
+
+**File:** `frontend/src/components/GroupCard.tsx`
+
+**Features:**
+- Display individual group information
+- "Request to Join" (Αίτηση Συμμετοχής) button
+- Smart approval workflow indicator
+- Group status and member count display
+- Real-time join status messages
+- Loading states during join request
+- Group capacity indicator
+
+**Usage:**
+```tsx
+import GroupCard from './components/GroupCard';
+
+<GroupCard
+  id="1"
+  title="Mathematics Advanced"
+  subject="Mathematics"
+  description="Advanced mathematics study group"
+  numberOfMembers={12}
+  maxMembers={20}
+  status="Open"
+  visibility="Public"
+  coordinatorRole="Συντονιστής"
+  createdAt="2026-04-15"
+  userId="user_123"
+  onJoinSuccess={(groupId, message) => console.log(message)}
+/>
 ```
 
 ### CreateGroup Component
@@ -390,7 +495,7 @@ function App() {
 
 ---
 
-## 🔨 Development Guide
+## 🔧 Development Guide
 
 ### Adding a New Endpoint
 
@@ -460,29 +565,34 @@ curl -X POST http://localhost:5000/api/groups/create \
     "visibility": "Public",
     "userId": "user_123"
   }'
-```
 
-**Using Postman:**
-1. Import collection from `docs/postman_collection.json` (if available)
-2. Set variables for `base_url`, `user_id`, etc.
-3. Run requests and verify responses
+# Join Open Group
+curl -X POST http://localhost:5000/api/groups/1/join \
+  -H "Content-Type: application/json" \
+  -d '{"userId": "user_999"}'
+
+# Join Approval Group
+curl -X POST http://localhost:5000/api/groups/2/join \
+  -H "Content-Type: application/json" \
+  -d '{"userId": "user_999"}'
+```
 
 ### Frontend Testing
 
 1. **Check components load:**
    - Navigate to http://localhost:3000
-   - Verify SearchGroups component displays
-   - Verify CreateGroup component works
+   - Verify SearchGroupsWithJoin component displays
+   - Verify GroupCard components render
 
-2. **Test form validation:**
+2. **Test join functionality:**
+   - Click "Request to Join" on various groups
+   - Verify appropriate response (approved/pending)
+   - Check status messages display correctly
+
+3. **Test form validation:**
    - Try submitting empty form
    - Try entering invalid data
    - Verify error messages appear
-
-3. **Test API integration:**
-   - Create a group
-   - Search for groups
-   - Verify data matches backend
 
 ---
 
@@ -520,6 +630,8 @@ test: Add tests
 - All responses include proper HTTP status codes
 - Comprehensive error handling on both frontend and backend
 - TypeScript for type safety throughout
+- Coordinator notifications are simulated
+- Future: Implement real notification system with WebSockets
 
 ---
 
@@ -538,19 +650,22 @@ This project is licensed under the MIT License.
 
 ---
 
-## 🎯 Roadmap
+## 🗺️ Roadmap
 
 - [x] Search Groups Feature
 - [x] Create Groups Feature
-- [ ] Join Groups Feature
+- [x] Join Groups Feature (with approval workflow)
+- [ ] Approve/Reject Join Requests
 - [ ] User Profiles
 - [ ] Messaging System
-- [ ] Notifications
+- [ ] Real-time Notifications (WebSockets)
 - [ ] Group Analytics
 - [ ] Admin Dashboard
+- [ ] Leave Group Functionality
+- [ ] Member Role Management
 
 ---
 
 **Last Updated:** May 15, 2026
 
-**Version:** 1.0.0
+**Version:** 2.0.0
