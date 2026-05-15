@@ -1,0 +1,400 @@
+/* CreateGroup Component Styles */
+
+.create-group-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Card Container */
+.create-group-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Header */
+.create-group-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px;
+  text-align: center;
+}
+
+.create-group-header h1 {
+  font-size: 2rem;
+  margin: 0 0 10px 0;
+}
+
+.create-group-header p {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* Success Message */
+.success-message {
+  background-color: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  padding: 16px 20px;
+  margin: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: slideInDown 0.3s ease;
+}
+
+.success-icon {
+  font-size: 1.5rem;
+  color: #4caf50;
+  flex-shrink: 0;
+}
+
+.success-content {
+  flex: 1;
+}
+
+.success-title {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.success-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #388e3c;
+}
+
+/* Error Message */
+.error-message {
+  background-color: #fee;
+  border-left: 4px solid #d32f2f;
+  padding: 16px 20px;
+  margin: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #d32f2f;
+  animation: slideInDown 0.3s ease;
+}
+
+.error-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.error-message p {
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Form */
+.create-group-form {
+  padding: 30px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group:last-of-type {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.required {
+  color: #d32f2f;
+  font-weight: 700;
+}
+
+/* Form Inputs */
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-input.input-error,
+.form-select.input-error,
+.form-textarea.input-error {
+  border-color: #d32f2f;
+  background-color: #fff5f5;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Form Meta (character count, error text) */
+.form-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
+.char-count {
+  color: #999;
+}
+
+.error-text {
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+/* Visibility Options */
+.visibility-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.radio-label:hover {
+  background-color: #f9f9f9;
+  border-color: #667eea;
+}
+
+.radio-label input[type='radio'] {
+  margin-top: 2px;
+  margin-right: 12px;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: #667eea;
+}
+
+.radio-label input[type='radio']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.radio-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.radio-text strong {
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.radio-description {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Coordinator Info Box */
+.coordinator-info {
+  background-color: #f0f4ff;
+  border-left: 4px solid #667eea;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.info-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-title {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  color: #667eea;
+  font-size: 0.95rem;
+}
+
+.info-description {
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #667eea;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #d0d0d0;
+}
+
+/* Button Spinner */
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Form Footer */
+.form-footer {
+  background-color: #f9f9f9;
+  padding: 16px 30px 30px;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.form-footer p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Animations */
+@keyframes slideInDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .create-group-container {
+    padding: 10px;
+  }
+
+  .create-group-header {
+    padding: 20px;
+  }
+
+  .create-group-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .create-group-form {
+    padding: 20px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .visibility-options {
+    gap: 10px;
+  }
+
+  .coordinator-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .info-icon {
+    font-size: 2rem;
+  }
+
+  .form-footer {
+    padding: 16px 20px 20px;
+  }
+}
