@@ -123,7 +123,7 @@ study-group/
 
 3. **Install development dependencies:**
    ```bash
-   npm install --save-dev typescript @types/node @types/express ts-node
+   npm install --save-dev typescript @types/node @types/express tsx
    ```
 
 4. **Create .env file:**
@@ -135,9 +135,7 @@ study-group/
 
 5. **Start the server:**
    ```bash
-   npm run dev
-   # or
-   npx ts-node src/server.ts
+   npx tsx src/server.ts
    ```
 
    Server will run on: `http://localhost:5000`
@@ -666,6 +664,6 @@ This project is licensed under the MIT License.
 
 ---
 
-**Last Updated:** May 15, 2026
+**Last Updated:** May 17, 2026
 
 **Version:** 2.0.0
